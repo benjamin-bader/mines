@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     int cellSize = 30;
 
-    setFixedSize(cellSize * 15, cellSize * 15);
+    setFixedSize(cellSize * m_numRows, cellSize * m_numCols);
 }
 
 MainWindow::~MainWindow() {}
@@ -91,8 +91,8 @@ void MainWindow::initializeGrid()
     setCentralWidget(widget);
 
     QSizePolicy sizePolicy;
-    sizePolicy.setHorizontalPolicy(QSizePolicy::Fixed);
-    sizePolicy.setVerticalPolicy(QSizePolicy::Fixed);
+    sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+    sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
     sizePolicy.setWidthForHeight(true);
 
     m_cells.clear();
@@ -104,6 +104,7 @@ void MainWindow::initializeGrid()
             cell->setSizePolicy(sizePolicy);
 
             connect(cell, &Cell::revealed, this, &MainWindow::cellRevealed);
+            connect(this, &MainWindow::gameEnded, cell, &Cell::gameEnded);
 
             m_grid->addWidget(cell, y, x);
             m_cells << cell;
@@ -211,6 +212,8 @@ void MainWindow::win()
 {
     centralWidget()->setEnabled(false);
 
+    emit gameEnded();
+
     int ret = QMessageBox::information(
         this,
         tr("You win!"),
@@ -228,6 +231,8 @@ void MainWindow::win()
 void MainWindow::lose()
 {
     centralWidget()->setEnabled(false);
+
+    emit gameEnded();
 
     int ret = QMessageBox::critical(
         this,

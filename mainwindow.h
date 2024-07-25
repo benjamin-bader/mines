@@ -38,6 +38,9 @@ public:
 private slots:
     void cellRevealed(const std::shared_ptr<Revelation>& revelation);
 
+signals:
+    void gameEnded();
+
 private:
     void initializeMenu();
     void initializeGrid();

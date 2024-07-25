@@ -56,6 +56,7 @@ public:
 
 public slots:
     void reveal();
+    void gameEnded();
 
 signals:
     void revealed(const std::shared_ptr<Revelation>& revelation);
@@ -68,6 +69,7 @@ protected:
 private:
     bool m_revealed;
     bool m_flagged;
+    bool m_gameOver;
     bool m_leftMouseDown;
     bool m_rightMouseDown;
     int m_x;
