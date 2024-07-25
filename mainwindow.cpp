@@ -20,7 +20,9 @@
 #include <QGridLayout>
 #include <QMessageBox>
 
+#include <algorithm>
 #include <random>
+#include <ranges>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -133,7 +135,7 @@ void MainWindow::initializeGrid()
             continue;
         }
 
-        Cell* cell = cellAt(QPoint(row, col));
+        Cell* cell = cellAt(QPoint(col, row));
 
         if (cell->isMine())
         {
@@ -178,36 +180,26 @@ Cell* MainWindow::cellAt(QPoint coord)
 QList<QPoint> MainWindow::neighborsOf(QPoint coord) const
 {
     static QList<QPoint> offsets{
-        QPoint(-1, -1), QPoint(-1, 0), QPoint(-1, 1),
-        QPoint(0, -1), /* QPoint(0, 0), */ QPoint(0, 1),
-        QPoint(1, -1), QPoint(1, 0), QPoint(1, 1),
+        QPoint(-1, -1), QPoint(0, -1), QPoint(1, -1),
+        QPoint(-1, 0), /* QPoint(0, 0), */ QPoint(1, 0),
+        QPoint(-1, 1), QPoint(0, 1), QPoint(1, 1),
     };
 
-    QList<QPoint> result;
+    QRect bounds(QPoint(0, 0), QPoint(m_numRows - 1, m_numCols - 1));
 
-    for (const auto& offset : offsets)
-    {
-        QPoint neighbor = coord + offset;
-        if (neighbor.x() >= 0 && neighbor.x() < m_numCols && neighbor.y() >= 0 && neighbor.y() < m_numRows)
-        {
-            result << neighbor;
-        }
-    }
+    auto neighbors = offsets
+        | std::views::transform([&](auto offset) { return coord + offset; })
+        | std::views::filter([&](auto n) { return bounds.contains(n); });
 
-    return result;
+    return {std::begin(neighbors), std::end(neighbors)};
 }
 
 bool MainWindow::isBoardSolved() const
 {
-    for (const auto cell : m_cells)
-    {
-        if (cell->isMine()) continue;
-        if (cell->isRevealed()) continue;
-
-        return false;
-    }
-
-    return true;
+    return std::all_of(
+        m_cells.begin(),
+        m_cells.end(),
+        [](Cell* c) { return c->isRevealed() || c->isMine(); });
 }
 
 void MainWindow::win()
