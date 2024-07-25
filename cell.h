@@ -20,29 +20,23 @@
 
 #include <QMouseEvent>
 #include <QPaintEvent>
+#include <QPoint>
 #include <QPushButton>
-
-#include <memory>
-
-struct Revelation
-{
-    bool safe;
-    int x;
-    int y;
-    int numNeighboringMines;
-};
 
 class Cell : public QPushButton
 {
     Q_OBJECT
 
 public:
-    explicit Cell(int x, int y, QWidget *parent = nullptr);
+    explicit Cell(QPoint coords, QWidget *parent = nullptr);
 
-    void setX(int x);
-    void setY(int y);
     void setNumNeighboringMines(int numNeighboringMines); // -1 means that this cell is a mine
     void toggleFlag();
+
+    int getNumNeighboringMines() const
+    {
+        return m_numNeighboringMines;
+    }
 
     bool isMine() const
     {
@@ -59,7 +53,7 @@ public slots:
     void gameEnded();
 
 signals:
-    void revealed(const std::shared_ptr<Revelation>& revelation);
+    void revealed(QPoint coords);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -72,8 +66,7 @@ private:
     bool m_gameOver;
     bool m_leftMouseDown;
     bool m_rightMouseDown;
-    int m_x;
-    int m_y;
+    QPoint m_coords;
     int m_numNeighboringMines; // -1 means "mine"
 };
 

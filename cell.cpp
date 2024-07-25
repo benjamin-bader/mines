@@ -48,28 +48,17 @@ const auto labelColors = std::array {
 
 } // namespace Brushes
 
-Cell::Cell(int x, int y, QWidget *parent)
+Cell::Cell(QPoint coords, QWidget *parent)
     : QPushButton{parent}
     , m_revealed(false)
     , m_flagged(false)
     , m_gameOver(false)
     , m_leftMouseDown(false)
     , m_rightMouseDown(false)
-    , m_x(x)
-    , m_y(y)
+    , m_coords(coords)
     , m_numNeighboringMines(0)
 {
     setAttribute(Qt::WA_LayoutUsesWidgetRect);
-}
-
-void Cell::setX(int x)
-{
-    m_x = x;
-}
-
-void Cell::setY(int y)
-{
-    m_y = y;
 }
 
 void Cell::setNumNeighboringMines(int numNeighboringMines)
@@ -98,13 +87,7 @@ void Cell::reveal()
     }
     m_revealed = true;
 
-    auto revelation = std::make_shared<Revelation>();
-    revelation->safe = m_numNeighboringMines != -1;
-    revelation->x = m_x;
-    revelation->y = m_y;
-    revelation->numNeighboringMines = m_numNeighboringMines;
-
-    emit revealed(revelation);
+    emit revealed(m_coords);
 
     update();
 }
@@ -183,35 +166,21 @@ void Cell::paintEvent(QPaintEvent* event)
     QPointF bottomLeftIn(bottomLeftOut.x() + dx, bottomLeftOut.y() - dy);
     QPointF bottomRightIn(bottomRightOut.x() - dx, bottomRightOut.y() - dy);
 
-    if (m_revealed || (isMine() && m_gameOver))
+    QString label;
+    if (m_revealed)
     {
         painter.fillRect(rect, Brushes::Background);
 
-        QString label;
         if (isMine())
         {
             label = "B";
-            if (m_revealed)
-            {
-                painter.fillRect(rect, Qt::red);
-            }
+            painter.fillRect(rect, Qt::red);
             painter.setPen(Qt::black);
         }
-        else
+        else if (m_numNeighboringMines != 0)
         {
             label = QString::number(m_numNeighboringMines);
             painter.setPen(Brushes::labelColors[m_numNeighboringMines]);
-        }
-
-        if (m_numNeighboringMines != 0)
-        {
-            QFontMetrics fm = painter.fontMetrics();
-            QRect br = fm.tightBoundingRect(label);
-            QPoint labelStart(
-                rect.center().x() - round(br.width() / 2.0),
-                rect.center().y() + round(br.height() / 2.0));
-
-            painter.drawText(labelStart, label);
         }
     }
     else
@@ -258,6 +227,22 @@ void Cell::paintEvent(QPaintEvent* event)
 
             painter.drawText(labelStart, label);
         }
+
+        if (m_gameOver && isMine())
+        {
+            label = "B";
+        }
+    }
+
+    if (label != "")
+    {
+        QFontMetrics fm = painter.fontMetrics();
+        QRect br = fm.tightBoundingRect(label);
+        QPoint labelStart(
+            rect.center().x() - round(br.width() / 2.0),
+            rect.center().y() + round(br.height() / 2.0));
+
+        painter.drawText(labelStart, label);
     }
 
 //    painter.save();

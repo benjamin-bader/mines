@@ -25,8 +25,6 @@
 #include <QMainWindow>
 #include <QPoint>
 
-#include <memory>
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -36,7 +34,7 @@ public:
     virtual ~MainWindow();
 
 private slots:
-    void cellRevealed(const std::shared_ptr<Revelation>& revelation);
+    void cellRevealed(QPoint coords);
 
 signals:
     void gameEnded();
@@ -44,8 +42,8 @@ signals:
 private:
     void initializeMenu();
     void initializeGrid();
-    Cell* cellAt(int x, int y);
-    QList<QPoint> neighborsOf(int x, int y) const;
+    Cell* cellAt(QPoint coords);
+    QList<QPoint> neighborsOf(QPoint coords) const;
     bool isBoardSolved() const;
 
     void win();

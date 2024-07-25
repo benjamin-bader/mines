@@ -38,21 +38,21 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::cellRevealed(const std::shared_ptr<Revelation>& revelation)
+void MainWindow::cellRevealed(QPoint coords)
 {
-    if (!revelation->safe)
+    Cell* cell = cellAt(coords);
+    if (cell->isMine())
     {
         lose();
         return;
     }
 
-    if (revelation->numNeighboringMines == 0)
+    if (cell->getNumNeighboringMines() == 0)
     {
         // recurse through neighbors
-        for (const auto& neighbor : neighborsOf(revelation->x, revelation->y))
+        for (const auto& neighbor : neighborsOf(coords))
         {
-            // see how this goes
-            QMetaObject::invokeMethod(cellAt(neighbor.x(), neighbor.y()), "reveal", Qt::QueuedConnection);
+            cellAt(neighbor)->reveal();
         }
 
         return;
@@ -100,7 +100,8 @@ void MainWindow::initializeGrid()
     {
         for (int x = 0; x < m_numCols; ++x)
         {
-            Cell* cell = new Cell(x, y, this);
+            QPoint coord(x, y);
+            Cell* cell = new Cell(coord, this);
             cell->setSizePolicy(sizePolicy);
 
             connect(cell, &Cell::revealed, this, &MainWindow::cellRevealed);
@@ -132,7 +133,7 @@ void MainWindow::initializeGrid()
             continue;
         }
 
-        Cell* cell = cellAt(col, row);
+        Cell* cell = cellAt(QPoint(row, col));
 
         if (cell->isMine())
         {
@@ -147,32 +148,34 @@ void MainWindow::initializeGrid()
     {
         for (int x = 0; x < m_numCols; ++x)
         {
-            if (cellAt(x, y)->isMine())
+            QPoint coord(x, y);
+
+            if (cellAt(coord)->isMine())
             {
                 continue;
             }
 
             int numNeighbors = 0;
-            for (const auto& neighbor : neighborsOf(x, y))
+            for (const auto& neighbor : neighborsOf(coord))
             {
-                Cell* cell = cellAt(neighbor.x(), neighbor.y());
+                Cell* cell = cellAt(neighbor);
                 if (cell->isMine())
                 {
                     numNeighbors++;
                 }
             }
 
-            cellAt(x, y)->setNumNeighboringMines(numNeighbors);
+            cellAt(coord)->setNumNeighboringMines(numNeighbors);
         }
     }
 }
 
-Cell* MainWindow::cellAt(int x, int y)
+Cell* MainWindow::cellAt(QPoint coord)
 {
-    return m_cells[y * m_numRows + x];
+    return m_cells[coord.y() * m_numRows + coord.x()];
 }
 
-QList<QPoint> MainWindow::neighborsOf(int x, int y) const
+QList<QPoint> MainWindow::neighborsOf(QPoint coord) const
 {
     static QList<QPoint> offsets{
         QPoint(-1, -1), QPoint(-1, 0), QPoint(-1, 1),
@@ -182,10 +185,9 @@ QList<QPoint> MainWindow::neighborsOf(int x, int y) const
 
     QList<QPoint> result;
 
-    QPoint cur(x, y);
     for (const auto& offset : offsets)
     {
-        QPoint neighbor = cur + offset;
+        QPoint neighbor = coord + offset;
         if (neighbor.x() >= 0 && neighbor.x() < m_numCols && neighbor.y() >= 0 && neighbor.y() < m_numRows)
         {
             result << neighbor;
