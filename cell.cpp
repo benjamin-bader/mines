@@ -58,6 +58,8 @@ Cell::Cell(QPoint coords, QWidget *parent)
     , m_coords(coords)
     , m_numNeighboringMines(0)
 {
+    // For some dumb reason on macOS, cells in a grid layout have vertical overlap, a little bit,
+    // unless you set this attribute.
     setAttribute(Qt::WA_LayoutUsesWidgetRect);
 }
 
@@ -173,7 +175,7 @@ void Cell::paintEvent(QPaintEvent* event)
 
         if (isMine())
         {
-            label = "B";
+            label = QStringLiteral("B");
             painter.fillRect(rect, Qt::red);
             painter.setPen(Qt::black);
         }
@@ -230,7 +232,8 @@ void Cell::paintEvent(QPaintEvent* event)
 
         if (m_gameOver && isMine())
         {
-            label = "B";
+            painter.setPen(Qt::black);
+            label = QStringLiteral("B");
         }
     }
 

@@ -14,15 +14,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QCoreApplication>
 #include <QLocale>
 #include <QTranslator>
+#include <QString>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    QCoreApplication::setApplicationName(QObject::tr("Mines"));
+    QCoreApplication::setApplicationVersion("0.1.0");
+    QCoreApplication::setOrganizationName("com.bendb");
+    QCoreApplication::setOrganizationDomain("com.bendb");
 
     QTranslator translator;
     if (translator.load(QLocale::system(), "Mines", "_", ":i18n/"))

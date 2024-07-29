@@ -20,6 +20,8 @@
 
 #include "cell.h"
 
+#include <QAction>
+#include <QActionGroup>
 #include <QGridLayout>
 #include <QList>
 #include <QMainWindow>
@@ -40,7 +42,9 @@ signals:
     void gameEnded();
 
 private:
+    void initializeActions();
     void initializeMenu();
+    void initializeGame(int numRows, int numCols, int numMines);
     void initializeGrid();
     Cell* cellAt(QPoint coords);
     QList<QPoint> neighborsOf(QPoint coords) const;
@@ -51,7 +55,13 @@ private:
 
     int m_numRows;
     int m_numCols;
-    QGridLayout* m_grid;
+    int m_numMines;
     QList<Cell*> m_cells;
+
+    QActionGroup* m_gameSizeGroup;
+    QAction* m_smallGame;
+    QAction* m_mediumGame;
+    QAction* m_largeGame;
 };
+
 #endif // MAINWINDOW_H
