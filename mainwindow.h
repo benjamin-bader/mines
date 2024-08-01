@@ -19,6 +19,7 @@
 #define MAINWINDOW_H
 
 #include "cell.h"
+#include "gameboard.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -44,18 +45,21 @@ signals:
 private:
     void initializeActions();
     void initializeMenu();
-    void initializeGame(int numRows, int numCols, int numMines);
+    void initializeGame(GameBoard board);
     void initializeGrid();
-    Cell* cellAt(QPoint coords);
-    QList<QPoint> neighborsOf(QPoint coords) const;
+
+    Cell* cellAt(QPoint coords) const;
     bool isBoardSolved() const;
+    bool isCorner(const QPoint& point) const;
+
+    int rows() const;
+    int cols() const;
+    int mines() const;
 
     void win();
     void lose();
 
-    int m_numRows;
-    int m_numCols;
-    int m_numMines;
+    GameBoard m_board;
     QList<Cell*> m_cells;
 
     QActionGroup* m_gameSizeGroup;

@@ -24,6 +24,7 @@ qt_add_executable(Mines
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
     cell.h cell.cpp
+    gameboard.h gameboard.cpp
 )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Mines APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -47,6 +48,10 @@ set_target_properties(Mines PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+if (APPLE)
+    target_compile_options(Mines PRIVATE -fexperimental-library)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS Mines

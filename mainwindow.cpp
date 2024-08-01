@@ -21,6 +21,8 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSettings>
+#include <QVariant>
 
 #include <algorithm>
 #include <random>
@@ -30,27 +32,64 @@ namespace {
 
 constexpr const int kCellSize = 30;
 
-struct GameSize
+constexpr const GameBoard kSmallGame{10, 10, 15};
+constexpr const GameBoard kMediumGame{15, 15, 45};
+constexpr const GameBoard kLargeGame{16, 30, 99};
+
+auto allCells(const GameBoard& board)
 {
-    int rows;
-    int cols;
-    int mines;
-};
+    using namespace std::ranges::views;
 
-constexpr const GameSize kSmallGame = { .rows = 10, .cols = 10, .mines = 15 };
-constexpr const GameSize kMediumGame = { .rows = 15, .cols = 15, .mines = 45 };
-constexpr const GameSize kLargeGame = { .rows = 16, .cols = 30, .mines = 99 };
+    int rows = board.rows();
+    int cols = board.cols();
+    int numCells = rows * cols;
 
+    auto toPoint = [cols](int n) {
+        int x = n % cols;
+        int y = n / cols;
+        return QPoint{x, y};
+    };
+
+    return iota(0, numCells) | transform(toPoint);
 }
+
+auto neighborsOf(const GameBoard& board, QPoint point)
+{
+    using namespace std::ranges::views;
+
+    static constexpr QPoint offsets[] {
+        {-1, -1}, {0, -1}, {1, -1},
+        {-1,  0},          {1,  0},
+        {-1,  1}, {0,  1}, {1,  1},
+    };
+
+    QRect bounds(0, 0, board.cols(), board.rows());
+
+    auto ns = offsets
+           | transform([point](QPoint o) { return point + o; })
+           | filter([bounds](QPoint p) { return bounds.contains(p); });
+
+    return ns;
+}
+
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    QSettings settings;
+    QVariant lastSize = settings.value("board");
+    GameBoard size = kMediumGame;
+    if (lastSize.isValid())
+    {
+        size = lastSize.value<GameBoard>();
+    }
+
     setWindowTitle(tr("Mines"));
     initializeActions();
     initializeMenu();
 
-    initializeGame(kMediumGame.rows, kMediumGame.cols, kMediumGame.mines);
+    initializeGame(size);
 }
 
 MainWindow::~MainWindow() {}
@@ -66,7 +105,7 @@ void MainWindow::cellRevealed(QPoint coords)
 
     if (cell->getNumNeighboringMines() == 0)
     {
-        for (const auto& neighbor : neighborsOf(coords))
+        for (const auto& neighbor : neighborsOf(m_board, coords))
         {
             cellAt(neighbor)->reveal();
         }
@@ -84,15 +123,18 @@ void MainWindow::initializeActions()
 {
     m_smallGame = new QAction;
     m_smallGame->setText(tr("Small"));
-    connect(m_smallGame, &QAction::triggered, this, [&]() { initializeGame(kSmallGame.rows, kSmallGame.cols, kSmallGame.mines); });
+    m_smallGame->setCheckable(true);
+    connect(m_smallGame, &QAction::triggered, this, [&]() { initializeGame(kSmallGame); });
 
     m_mediumGame = new QAction;
     m_mediumGame->setText(tr("Medium"));
-    connect(m_mediumGame, &QAction::triggered, this, [&]() { initializeGame(kMediumGame.rows, kMediumGame.cols, kMediumGame.mines); });
+    m_mediumGame->setCheckable(true);
+    connect(m_mediumGame, &QAction::triggered, this, [&]() { initializeGame(kMediumGame); });
 
     m_largeGame = new QAction;
     m_largeGame->setText(tr("Large"));
-    connect(m_largeGame, &QAction::triggered, this, [&]() { initializeGame(kLargeGame.rows, kLargeGame.cols, kLargeGame.mines); });
+    m_largeGame->setCheckable(true);
+    connect(m_largeGame, &QAction::triggered, this, [&]() { initializeGame(kLargeGame); });
 
     m_gameSizeGroup = new QActionGroup(this);
     m_gameSizeGroup->addAction(m_smallGame);
@@ -126,14 +168,28 @@ void MainWindow::initializeMenu()
     connect(quit, &QAction::triggered, &QCoreApplication::quit);
 }
 
-void MainWindow::initializeGame(int numRows, int numCols, int numMines)
+void MainWindow::initializeGame(GameBoard board)
 {
-    m_numRows = numRows;
-    m_numCols = numCols;
-    m_numMines = numMines;
+    m_board = board;
     initializeGrid();
 
-    setFixedSize(kCellSize * m_numCols, kCellSize * m_numRows);
+    setFixedSize(kCellSize * cols(), kCellSize * rows());
+
+    if (board == kSmallGame)
+    {
+        m_smallGame->setChecked(true);
+    }
+    else if (board == kMediumGame)
+    {
+        m_mediumGame->setChecked(true);
+    }
+    else if (board == kLargeGame)
+    {
+        m_largeGame->setChecked(true);
+    }
+
+    QSettings settings;
+    settings.setValue("board", QVariant::fromValue(board));
 }
 
 void MainWindow::initializeGrid()
@@ -158,104 +214,65 @@ void MainWindow::initializeGrid()
     sizePolicy.setWidthForHeight(true);
 
     m_cells.clear();
-    m_cells.reserve(m_numRows * m_numCols);
-    for (int y = 0; y < m_numRows; ++y)
+    m_cells.reserve(rows() * cols());
+    for (QPoint coord : allCells(m_board))
     {
-        for (int x = 0; x < m_numCols; ++x)
-        {
-            QPoint coord(x, y);
-            Cell* cell = new Cell(coord, widget);
-            cell->setSizePolicy(sizePolicy);
-            cell->setMinimumHeight(kCellSize);
-            cell->setMinimumWidth(kCellSize);
+        Cell* cell = new Cell(coord, widget);
+        cell->setSizePolicy(sizePolicy);
+        cell->setMinimumHeight(kCellSize);
+        cell->setMinimumWidth(kCellSize);
 
-            connect(cell, &Cell::revealed, this, &MainWindow::cellRevealed);
-            connect(this, &MainWindow::gameEnded, cell, &Cell::gameEnded);
+        connect(cell, &Cell::revealed, this, &MainWindow::cellRevealed);
+        connect(this, &MainWindow::gameEnded, cell, &Cell::gameEnded);
 
-            grid->addWidget(cell, y, x);
-            m_cells << cell;
-        }
+        grid->addWidget(cell, coord.y(), coord.x());
+        m_cells << cell;
     }
     m_cells.squeeze(); // if we've gone from a large to a small game, m_cells is over-allocated.  release.
 
-    int numMines = m_numMines;
+    // Next, mark cells that are mines.
+    int numMines = mines();
 
-    std::random_device rd;  // a seed source for the random number engine
-    std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<> rowDistrib(0, m_numRows - 1);
-    std::uniform_int_distribution<> colDistrib(0, m_numCols - 1);
+    QList<int> indices(rows() * cols());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
 
-    while (numMines > 0)
+    auto toPoint = [&](int n) { return QPoint{n % cols(), n / cols()}; };
+    auto nonCorner = [&](QPoint p) { return !isCorner(p); };
+    auto mineCells = indices
+                     | std::ranges::views::transform(toPoint)
+                     | std::ranges::views::filter(nonCorner)
+                     | std::ranges::views::take(numMines);
+
+    for (QPoint point : mineCells)
     {
-        int row = rowDistrib(gen);
-        int col = colDistrib(gen);
+        cellAt(point)->setNumNeighboringMines(-1);
+    }
 
-        if ((row == 0 && col == 0)
-            || (row == m_numRows - 1 && col == 0)
-            || (row == 0 && col == m_numCols - 1)
-            || (row == m_numRows -1 && col == m_numCols - 1))
-        {
-            // no corners!
-            continue;
-        }
-
-        Cell* cell = cellAt(QPoint(col, row));
-
+    // Finally, mark all non-mines with the count of surrounding mines.
+    for (QPoint coord : allCells(m_board))
+    {
+        Cell* cell = cellAt(coord);
         if (cell->isMine())
         {
             continue;
         }
 
-        cell->setNumNeighboringMines(-1);
-        numMines--;
-    }
+        using namespace std::ranges::views;
 
-    for (int y = 0; y < m_numRows; ++y)
-    {
-        for (int x = 0; x < m_numCols; ++x)
-        {
-            QPoint coord(x, y);
+        auto ns = neighborsOf(m_board, coord)
+                  | transform([&](auto p) { return cellAt(p); })
+                  | filter([](auto c) { return c->isMine(); });
 
-            if (cellAt(coord)->isMine())
-            {
-                continue;
-            }
+        auto numNeighbors = std::ranges::distance(ns);
 
-            int numNeighbors = 0;
-            for (const auto& neighbor : neighborsOf(coord))
-            {
-                Cell* cell = cellAt(neighbor);
-                if (cell->isMine())
-                {
-                    numNeighbors++;
-                }
-            }
-
-            cellAt(coord)->setNumNeighboringMines(numNeighbors);
-        }
+        cell->setNumNeighboringMines(numNeighbors);
     }
 }
 
-Cell* MainWindow::cellAt(QPoint coord)
+Cell* MainWindow::cellAt(QPoint coord) const
 {
-    return m_cells[(coord.y() * m_numCols) + coord.x()];
-}
-
-QList<QPoint> MainWindow::neighborsOf(QPoint coord) const
-{
-    static QList<QPoint> offsets{
-        QPoint(-1, -1), QPoint(0, -1), QPoint(1, -1),
-        QPoint(-1, 0), /* QPoint(0, 0), */ QPoint(1, 0),
-        QPoint(-1, 1), QPoint(0, 1), QPoint(1, 1),
-    };
-
-    QRect bounds(QPoint(0, 0), QPoint(m_numCols - 1, m_numRows - 1));
-
-    auto neighbors = offsets
-        | std::views::transform([&](auto offset) { return coord + offset; })
-        | std::views::filter([&](auto n) { return bounds.contains(n); });
-
-    return {std::begin(neighbors), std::end(neighbors)};
+    return m_cells[(coord.y() * cols()) + coord.x()];
 }
 
 bool MainWindow::isBoardSolved() const
@@ -264,6 +281,33 @@ bool MainWindow::isBoardSolved() const
         m_cells.begin(),
         m_cells.end(),
         [](Cell* c) { return c->isRevealed() || c->isMine(); });
+}
+
+bool MainWindow::isCorner(const QPoint& point) const
+{
+    int xmin = 0;
+    int ymin = 0;
+    int xmax = rows() - 1;
+    int ymax = cols() - 1;
+    return (point.x() == xmin && point.y() == ymin)
+           || (point.x() == xmin && point.y() == ymax)
+           || (point.x() == xmax && point.y() == ymin)
+           || (point.x() == xmax && point.y() == ymax);
+}
+
+int MainWindow::rows() const
+{
+    return m_board.rows();
+}
+
+int MainWindow::cols() const
+{
+    return m_board.cols();
+}
+
+int MainWindow::mines() const
+{
+    return m_board.mines();
 }
 
 void MainWindow::win()

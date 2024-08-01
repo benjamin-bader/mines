@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "gameboard.h"
 #include "mainwindow.h"
 
 #include <QApplication>
@@ -25,6 +26,8 @@
 
 int main(int argc, char *argv[])
 {
+    qRegisterMetaType<GameBoard>(); // needed for GameBoard to serialize to/from QVariant for QSettings
+
     QApplication a(argc, argv);
 
     QCoreApplication::setApplicationName(QObject::tr("Mines"));
