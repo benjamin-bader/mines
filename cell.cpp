@@ -248,11 +248,9 @@ void Cell::paintEvent(QPaintEvent* event)
         painter.drawText(labelStart, label);
     }
 
-//    painter.save();
     painter.setPen(Qt::gray);
     painter.drawLine(rect.topLeft(), rect.topRight());
     painter.drawLine(rect.topRight(), rect.bottomRight());
     painter.drawLine(rect.bottomRight(), rect.bottomLeft());
     painter.drawLine(rect.bottomLeft(), rect.topLeft());
-//    painter.restore();
 }

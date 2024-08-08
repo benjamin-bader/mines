@@ -21,6 +21,7 @@
 #include <QDataStream>
 #include <QObject>
 #include <QPoint>
+#include <QSettings>
 
 class GameBoard
 {
@@ -50,6 +51,9 @@ public:
     int rows() const { return m_rows; }
     int cols() const { return m_cols; }
     int mines() const { return m_mines; }
+
+    void save(QSettings& settings);
+    void load(QSettings& settings);
 };
 
 bool operator==(const GameBoard& lhs, const GameBoard& rhs);

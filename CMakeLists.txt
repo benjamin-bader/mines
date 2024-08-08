@@ -25,6 +25,7 @@ qt_add_executable(Mines
     ${PROJECT_SOURCES}
     cell.h cell.cpp
     gameboard.h gameboard.cpp
+    customgamedialog.h customgamedialog.cpp
 )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Mines APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -49,7 +50,7 @@ set_target_properties(Mines PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-if (APPLE)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(Mines PRIVATE -fexperimental-library)
 endif()
 

@@ -17,6 +17,8 @@
 
 #include "mainwindow.h"
 
+#include "customgamedialog.h"
+
 #include <QGridLayout>
 #include <QMenu>
 #include <QMenuBar>
@@ -78,12 +80,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     QSettings settings;
-    QVariant lastSize = settings.value("board");
-    GameBoard size = kMediumGame;
-    if (lastSize.isValid())
-    {
-        size = lastSize.value<GameBoard>();
-    }
+    GameBoard size;
+    size.load(settings);
 
     setWindowTitle(tr("Mines"));
     initializeActions();
@@ -136,12 +134,16 @@ void MainWindow::initializeActions()
     m_largeGame->setCheckable(true);
     connect(m_largeGame, &QAction::triggered, this, [&]() { initializeGame(kLargeGame); });
 
+    m_customGame = new QAction;
+    m_customGame->setText(tr("Custom"));
+    m_customGame->setCheckable(true);
+    connect(m_customGame, &QAction::triggered, this, &MainWindow::beginCustomGame);
+
     m_gameSizeGroup = new QActionGroup(this);
     m_gameSizeGroup->addAction(m_smallGame);
     m_gameSizeGroup->addAction(m_mediumGame);
     m_gameSizeGroup->addAction(m_largeGame);
-
-    m_mediumGame->setChecked(true);
+    m_gameSizeGroup->addAction(m_customGame);
 }
 
 void MainWindow::initializeMenu()
@@ -158,6 +160,7 @@ void MainWindow::initializeMenu()
     file->addAction(m_smallGame);
     file->addAction(m_mediumGame);
     file->addAction(m_largeGame);
+    file->addAction(m_customGame);
 
     file->addSeparator();
 
@@ -168,6 +171,23 @@ void MainWindow::initializeMenu()
     connect(quit, &QAction::triggered, &QCoreApplication::quit);
 }
 
+void MainWindow::beginCustomGame(bool checked)
+{
+    CustomGameDialog dialog{m_board, this};
+
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        initializeGame(dialog.getBoard());
+    }
+    else
+    {
+        // "Custom" will have been checked, but if the dialog was canceled
+        // then we want to restore the checkbox.
+        updateMenuCheckboxes();
+    }
+
+}
+
 void MainWindow::initializeGame(GameBoard board)
 {
     m_board = board;
@@ -175,21 +195,30 @@ void MainWindow::initializeGame(GameBoard board)
 
     setFixedSize(kCellSize * cols(), kCellSize * rows());
 
-    if (board == kSmallGame)
+    updateMenuCheckboxes();
+
+    QSettings settings;
+    board.save(settings);
+}
+
+void MainWindow::updateMenuCheckboxes()
+{
+    if (m_board == kSmallGame)
     {
         m_smallGame->setChecked(true);
     }
-    else if (board == kMediumGame)
+    else if (m_board == kMediumGame)
     {
         m_mediumGame->setChecked(true);
     }
-    else if (board == kLargeGame)
+    else if (m_board == kLargeGame)
     {
         m_largeGame->setChecked(true);
     }
-
-    QSettings settings;
-    settings.setValue("board", QVariant::fromValue(board));
+    else
+    {
+        m_customGame->setChecked(true);
+    }
 }
 
 void MainWindow::initializeGrid()
@@ -197,6 +226,7 @@ void MainWindow::initializeGrid()
     if (centralWidget() != nullptr)
     {
         centralWidget()->deleteLater();
+        setCentralWidget(nullptr);
     }
 
     QGridLayout* grid = new QGridLayout;
@@ -246,6 +276,7 @@ void MainWindow::initializeGrid()
 
     for (QPoint point : mineCells)
     {
+        Q_ASSERT(!isCorner(point));
         cellAt(point)->setNumNeighboringMines(-1);
     }
 
@@ -287,8 +318,8 @@ bool MainWindow::isCorner(const QPoint& point) const
 {
     int xmin = 0;
     int ymin = 0;
-    int xmax = rows() - 1;
-    int ymax = cols() - 1;
+    int xmax = cols() - 1;
+    int ymax = rows() - 1;
     return (point.x() == xmin && point.y() == ymin)
            || (point.x() == xmin && point.y() == ymax)
            || (point.x() == xmax && point.y() == ymin)

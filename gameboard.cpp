@@ -33,3 +33,21 @@ QDataStream& operator>>(QDataStream& stream, GameBoard& board)
 {
     return stream >> board.m_rows >> board.m_cols >> board.m_mines;
 }
+
+void GameBoard::save(QSettings& settings)
+{
+    settings.beginGroup("board");
+    settings.setValue("rows", m_rows);
+    settings.setValue("cols", m_cols);
+    settings.setValue("mines", m_mines);
+    settings.endGroup();
+}
+
+void GameBoard::load(QSettings& settings)
+{
+    settings.beginGroup("board");
+    m_rows = settings.value("rows", 15).toInt();
+    m_cols = settings.value("cols", 15).toInt();
+    m_mines = settings.value("mines", 45).toInt();
+    settings.endGroup();
+}

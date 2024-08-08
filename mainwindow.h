@@ -37,6 +37,7 @@ public:
     virtual ~MainWindow();
 
 private slots:
+    void beginCustomGame(bool checked);
     void cellRevealed(QPoint coords);
 
 signals:
@@ -47,6 +48,8 @@ private:
     void initializeMenu();
     void initializeGame(GameBoard board);
     void initializeGrid();
+
+    void updateMenuCheckboxes();
 
     Cell* cellAt(QPoint coords) const;
     bool isBoardSolved() const;
@@ -66,6 +69,7 @@ private:
     QAction* m_smallGame;
     QAction* m_mediumGame;
     QAction* m_largeGame;
+    QAction* m_customGame;
 };
 
 #endif // MAINWINDOW_H
