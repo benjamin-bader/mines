@@ -19,8 +19,6 @@
 #define GAMEBOARD_H
 
 #include <QDataStream>
-#include <QObject>
-#include <QPoint>
 #include <QSettings>
 
 class GameBoard

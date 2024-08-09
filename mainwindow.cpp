@@ -17,6 +17,7 @@
 
 #include "mainwindow.h"
 
+#include "aboutdialog.h"
 #include "customgamedialog.h"
 
 #include <QGridLayout>
@@ -65,11 +66,11 @@ auto neighborsOf(const GameBoard& board, QPoint point)
         {-1,  1}, {0,  1}, {1,  1},
     };
 
-    QRect bounds(0, 0, board.cols(), board.rows());
+    QRect bounds{0, 0, board.cols(), board.rows()};
 
     auto ns = offsets
            | transform([point](QPoint o) { return point + o; })
-           | filter([bounds](QPoint p) { return bounds.contains(p); });
+           | filter([bounds = std::move(bounds)](QPoint p) { return bounds.contains(p); });
 
     return ns;
 }
@@ -78,6 +79,7 @@ auto neighborsOf(const GameBoard& board, QPoint point)
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , m_about{nullptr}
 {
     QSettings settings;
     GameBoard size;
@@ -117,6 +119,18 @@ void MainWindow::cellRevealed(QPoint coords)
     }
 }
 
+void MainWindow::showAboutDialog()
+{
+    if (m_about == nullptr)
+    {
+        m_about = new AboutDialog{this};
+    }
+
+    m_about->show();
+    m_about->raise();
+    m_about->activateWindow();
+}
+
 void MainWindow::initializeActions()
 {
     m_smallGame = new QAction;
@@ -153,7 +167,7 @@ void MainWindow::initializeMenu()
     QAction* about = file->addAction(tr("&About"));
     about->setMenuRole(QAction::AboutRole);
     about->setStatusTip(tr("About this program"));
-    // TODO
+    connect(about, &QAction::triggered, this, &MainWindow::showAboutDialog);
 
     file->addSeparator()->setText(tr("Game Size"));
 
@@ -182,7 +196,7 @@ void MainWindow::beginCustomGame(bool checked)
     else
     {
         // "Custom" will have been checked, but if the dialog was canceled
-        // then we want to restore the checkbox.
+        // then we want to restore the previously-checked action's checked state.
         updateMenuCheckboxes();
     }
 

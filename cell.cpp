@@ -168,6 +168,8 @@ void Cell::paintEvent(QPaintEvent* event)
     QPointF bottomLeftIn(bottomLeftOut.x() + dx, bottomLeftOut.y() - dy);
     QPointF bottomRightIn(bottomRightOut.x() - dx, bottomRightOut.y() - dy);
 
+    QRectF mineRect{topLeftIn, bottomRightIn};
+
     QString label;
     if (m_revealed)
     {
@@ -175,9 +177,9 @@ void Cell::paintEvent(QPaintEvent* event)
 
         if (isMine())
         {
-            label = QStringLiteral("B");
             painter.fillRect(rect, Qt::red);
             painter.setPen(Qt::black);
+            painter.drawImage(mineRect, QImage(":icons/mine.svg"));
         }
         else if (m_numNeighboringMines != 0)
         {
@@ -233,7 +235,7 @@ void Cell::paintEvent(QPaintEvent* event)
         if (m_gameOver && isMine())
         {
             painter.setPen(Qt::black);
-            label = QStringLiteral("B");
+            painter.drawImage(mineRect, QImage(":icons/mine.svg"));
         }
     }
 

@@ -26,9 +26,6 @@ CustomGameDialog::CustomGameDialog(const GameBoard& currentBoard, QWidget* paren
 {
     setWindowTitle(tr("Custom Game"));
 
-    QSizePolicy policy;
-    policy.setHorizontalPolicy(QSizePolicy::Fixed);
-
     m_rows = new QSpinBox(this);
     m_rows->setMinimumWidth(40);
     m_rows->setRange(3, 75);
@@ -56,7 +53,7 @@ CustomGameDialog::CustomGameDialog(const GameBoard& currentBoard, QWidget* paren
     layout->addRow(new QLabel(tr("Mines: ")), m_mines);
     layout->addRow(buttons);
 
-    // hack to prevent the mines spinbox from resizing when width or height change
+    // hack to prevent the mines spinbox from resizing when rows or cols change
     layout->update();
     m_mines->setMinimumWidth(m_mines->minimumSizeHint().width());
     m_mines->setMaximumWidth(m_mines->minimumSizeHint().width());

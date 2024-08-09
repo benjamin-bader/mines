@@ -18,6 +18,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "aboutdialog.h"
 #include "cell.h"
 #include "gameboard.h"
 
@@ -39,6 +40,7 @@ public:
 private slots:
     void beginCustomGame(bool checked);
     void cellRevealed(QPoint coords);
+    void showAboutDialog();
 
 signals:
     void gameEnded();
@@ -70,6 +72,8 @@ private:
     QAction* m_mediumGame;
     QAction* m_largeGame;
     QAction* m_customGame;
+
+    AboutDialog* m_about;
 };
 
 #endif // MAINWINDOW_H

@@ -17,23 +17,6 @@
 
 #include "gameboard.h"
 
-bool operator==(const GameBoard& lhs, const GameBoard& rhs)
-{
-    return lhs.rows() == rhs.rows()
-           && lhs.cols() == rhs.cols()
-           && lhs.mines() == rhs.mines();
-}
-
-QDataStream& operator<<(QDataStream& stream, const GameBoard& board)
-{
-    return stream << board.m_rows << board.m_cols << board.m_mines;
-}
-
-QDataStream& operator>>(QDataStream& stream, GameBoard& board)
-{
-    return stream >> board.m_rows >> board.m_cols >> board.m_mines;
-}
-
 void GameBoard::save(QSettings& settings)
 {
     settings.beginGroup("board");
@@ -50,4 +33,21 @@ void GameBoard::load(QSettings& settings)
     m_cols = settings.value("cols", 15).toInt();
     m_mines = settings.value("mines", 45).toInt();
     settings.endGroup();
+}
+
+bool operator==(const GameBoard& lhs, const GameBoard& rhs)
+{
+    return lhs.rows() == rhs.rows()
+    && lhs.cols() == rhs.cols()
+        && lhs.mines() == rhs.mines();
+}
+
+QDataStream& operator<<(QDataStream& stream, const GameBoard& board)
+{
+    return stream << board.m_rows << board.m_cols << board.m_mines;
+}
+
+QDataStream& operator>>(QDataStream& stream, GameBoard& board)
+{
+    return stream >> board.m_rows >> board.m_cols >> board.m_mines;
 }

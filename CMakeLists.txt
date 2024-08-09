@@ -9,24 +9,31 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Gui Widgets LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Gui Widgets LinguistTools Svg)
 
 set(TS_FILES Mines_en.ts)
 
 set(PROJECT_SOURCES
+        aboutdialog.cpp
+        aboutdialog.h
+        cell.cpp
+        cell.h
+        customgamedialog.cpp
+        customgamedialog.h
+        gameboard.cpp
+        gameboard.h
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        res.qrc
         ${TS_FILES}
 )
 
 qt_add_executable(Mines
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
-    cell.h cell.cpp
-    gameboard.h gameboard.cpp
-    customgamedialog.h customgamedialog.cpp
 )
+
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Mines APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
@@ -40,7 +47,7 @@ qt_add_translations(Mines
     LUPDATE_OPTIONS -source-language en
 )
 
-target_link_libraries(Mines PRIVATE Qt6::Widgets)
+target_link_libraries(Mines PRIVATE Qt6::Widgets Qt6::Svg)
 
 set_target_properties(Mines PROPERTIES
     ${BUNDLE_ID_OPTION}
@@ -49,10 +56,6 @@ set_target_properties(Mines PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(Mines PRIVATE -fexperimental-library)
-endif()
 
 include(GNUInstallDirs)
 install(TARGETS Mines
