@@ -105,6 +105,11 @@ void Cell::gameEnded()
     update();
 }
 
+void Cell::mouseMoveEvent(QMouseEvent* event)
+{
+    event->ignore();
+}
+
 void Cell::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::RightButton)

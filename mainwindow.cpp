@@ -27,6 +27,8 @@
 #include <QSettings>
 #include <QVariant>
 
+#include <QtGlobal>
+
 #include <algorithm>
 #include <random>
 #include <ranges>
@@ -207,7 +209,18 @@ void MainWindow::initializeGame(GameBoard board)
     m_board = board;
     initializeGrid();
 
-    setFixedSize(kCellSize * cols(), kCellSize * rows());
+    int fixedWidth = kCellSize * cols();
+    int fixedHeight = kCellSize * rows();
+
+#ifndef Q_OS_MACOS
+    // macOS uses "global" menu bars at the top of the screen;
+    // other platforms have menubars attached at the top of each
+    // window.  If we're not on macOS, we need to account for the
+    // height of the menu bar or else cells end up squished.
+    fixedHeight += menuWidget()->height();
+#endif
+
+    setFixedSize(fixedWidth, fixedHeight);
 
     updateMenuCheckboxes();
 
@@ -281,7 +294,7 @@ void MainWindow::initializeGrid()
     std::iota(indices.begin(), indices.end(), 0);
     std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
 
-    auto toPoint = [&](int n) { return QPoint{n % cols(), n / cols()}; };
+    auto toPoint = [cols = cols()](int n) { return QPoint{n % cols, n / cols}; };
     auto nonCorner = [&](QPoint p) { return !isCorner(p); };
     auto mineCells = indices
                      | std::ranges::views::transform(toPoint)
