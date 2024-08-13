@@ -28,7 +28,7 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
-        res.qrc
+        resources/res.qrc
         ${TS_FILES}
 )
 
@@ -65,7 +65,7 @@ if(APPLE)
     find_program(CODESIGN codesign REQUIRED)
     find_program(MACDEPLOYQT macdeployqt REQUIRED HINTS "${_qt_bin_dir}")
 
-    set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/mine.icns")
+    set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/resources/mine.icns")
     set_source_files_properties(
         "${app_icon_macos}"
         PROPERTIES
@@ -96,7 +96,7 @@ if(APPLE)
 endif()
 
 if(WIN32)
-    # TODO: resource file + icon
+    target_sources(Mines PRIVATE "resources/win.rc")
 endif()
 
 include(GNUInstallDirs)

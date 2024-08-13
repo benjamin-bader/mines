@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <random>
 #include <ranges>
+#include <vector>
 
 namespace {
 
@@ -287,9 +288,10 @@ void MainWindow::initializeGrid()
     m_cells.squeeze(); // if we've gone from a large to a small game, m_cells is over-allocated.  release.
 
     // Next, mark cells that are mines.
-    int numMines = mines();
+    // Make a random list of cell indices, take as many non-corner cells as required,
+    // and mark them as mines.
 
-    QList<int> indices(rows() * cols());
+    std::vector<int> indices(rows() * cols()); // I'd use a QList here but MSVC complains about implicit conversion between iterators and pointers
     std::iota(indices.begin(), indices.end(), 0);
     std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
 
@@ -298,7 +300,7 @@ void MainWindow::initializeGrid()
     auto mineCells = indices
                      | std::ranges::views::transform(toPoint)
                      | std::ranges::views::filter(nonCorner)
-                     | std::ranges::views::take(numMines);
+                     | std::ranges::views::take(mines());
 
     for (QPoint point : mineCells)
     {
