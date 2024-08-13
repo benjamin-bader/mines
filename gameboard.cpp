@@ -35,13 +35,6 @@ void GameBoard::load(QSettings& settings)
     settings.endGroup();
 }
 
-bool operator==(const GameBoard& lhs, const GameBoard& rhs)
-{
-    return lhs.rows() == rhs.rows()
-    && lhs.cols() == rhs.cols()
-        && lhs.mines() == rhs.mines();
-}
-
 QDataStream& operator<<(QDataStream& stream, const GameBoard& board)
 {
     return stream << board.m_rows << board.m_cols << board.m_mines;

@@ -17,6 +17,18 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_PREFIX_PATH=/
 cmake --build build
 ```
 
+## Releasing
+
+### macOS
+
+To prepare an appstore-compliant build, add the following definitions to the cmake project:
+```
+-DCODESIGN_IDENTITY="your apple developer certificat name" -DMACOSX_SIGN_BUNDLE=ON
+```
+
+Then build as normal: `cmake --build build`
+
+TODO: How to package for app store?
 
 ---
 

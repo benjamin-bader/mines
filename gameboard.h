@@ -46,6 +46,8 @@ public:
 
     virtual ~GameBoard() = default;
 
+    auto operator<=>(const GameBoard& that) const = default;
+
     int rows() const { return m_rows; }
     int cols() const { return m_cols; }
     int mines() const { return m_mines; }
@@ -53,8 +55,6 @@ public:
     void save(QSettings& settings);
     void load(QSettings& settings);
 };
-
-bool operator==(const GameBoard& lhs, const GameBoard& rhs);
 
 QDataStream& operator<<(QDataStream&, const GameBoard&);
 QDataStream& operator>>(QDataStream&, GameBoard&);

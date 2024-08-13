@@ -201,7 +201,6 @@ void MainWindow::beginCustomGame(bool checked)
         // then we want to restore the previously-checked action's checked state.
         updateMenuCheckboxes();
     }
-
 }
 
 void MainWindow::initializeGame(GameBoard board)

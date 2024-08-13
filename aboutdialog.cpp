@@ -21,19 +21,31 @@
 #include <QImage>
 #include <QLabel>
 #include <QPixmap>
+#include <QString>
 #include <QVBoxLayout>
+
+namespace {
+
+constexpr const char* kAttributionText =
+    "<small>"
+    "<a href=\"https://usefulicons.com/glyph-16x16/naval-mine\">Naval Mine</a>"
+    " by Arthur Shlain"
+    " is licensed under <a href=\"https://creativecommons.org/licenses/by/3.0/\">CC BY 3.0</a>"
+    "</small>";
+
+}
 
 AboutDialog::AboutDialog(QWidget* parent)
     : QDialog::QDialog(parent)
 {
     setWindowTitle(tr("About Mines"));
 
-    QPixmap logo(":icons/mine.svg");
     QLabel* logoWidget = new QLabel(this);
-    logoWidget->setPixmap(logo);
+    QPixmap logo(":icons/mine.svg");
+    logoWidget->setPixmap(logo.scaled(60, 60));
 
     QLabel* attr = new QLabel(this);
-    attr->setText(tr("<a href=\"https://usefulicons.com/glyph-16x16/naval-mine\">Naval Mine</a> by <a href=\"\">Arthur Shlain</a> is licensed under <a href=\"https://creativecommons.org/licenses/by/3.0/\">CC BY 3.0</a>"));
+    attr->setText(tr(kAttributionText));
     attr->setTextFormat(Qt::RichText);
     attr->setTextInteractionFlags(Qt::TextBrowserInteraction);
     attr->setOpenExternalLinks(true);
@@ -44,7 +56,7 @@ AboutDialog::AboutDialog(QWidget* parent)
     vbox->addWidget(logoWidget, 0, Qt::AlignCenter);
     vbox->addWidget(new QLabel(tr("Mines")), 0, Qt::AlignCenter);
     vbox->addWidget(new QLabel(tr("Copyright 2024 Benjamin Bader")), 0, Qt::AlignCenter);
-    //vbox->addStretch(1);
+    vbox->addStretch(1);
     vbox->addWidget(attr, 0, Qt::AlignCenter);
 
     setLayout(vbox);

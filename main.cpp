@@ -20,6 +20,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QIcon>
 #include <QLocale>
 #include <QTranslator>
 #include <QString>
@@ -29,6 +30,8 @@ int main(int argc, char *argv[])
     qRegisterMetaType<GameBoard>(); // needed for GameBoard to serialize to/from QVariant for QSettings
 
     QApplication a(argc, argv);
+
+    a.setWindowIcon(QIcon(":icons/mine.svg"));
 
     QCoreApplication::setApplicationName(QObject::tr("Mines"));
     QCoreApplication::setApplicationVersion("0.1.0");
