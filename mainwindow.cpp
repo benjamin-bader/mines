@@ -19,7 +19,9 @@
 
 #include "aboutdialog.h"
 #include "customgamedialog.h"
+#include "minefield.h"
 
+#include <QDebug>
 #include <QGridLayout>
 #include <QMenu>
 #include <QMenuBar>
@@ -29,11 +31,6 @@
 
 #include <QtGlobal>
 
-#include <algorithm>
-#include <random>
-#include <ranges>
-#include <vector>
-
 namespace {
 
 constexpr const int kCellSize = 30;
@@ -42,47 +39,12 @@ constexpr const GameBoard kSmallGame{10, 10, 15};
 constexpr const GameBoard kMediumGame{15, 15, 45};
 constexpr const GameBoard kLargeGame{16, 30, 99};
 
-auto allCells(const GameBoard& board)
-{
-    using namespace std::ranges::views;
-
-    int rows = board.rows();
-    int cols = board.cols();
-    int numCells = rows * cols;
-
-    auto toPoint = [cols](int n) {
-        int x = n % cols;
-        int y = n / cols;
-        return QPoint{x, y};
-    };
-
-    return iota(0, numCells) | transform(toPoint);
-}
-
-auto neighborsOf(const GameBoard& board, QPoint point)
-{
-    using namespace std::ranges::views;
-
-    static constexpr QPoint offsets[] {
-        {-1, -1}, {0, -1}, {1, -1},
-        {-1,  0},          {1,  0},
-        {-1,  1}, {0,  1}, {1,  1},
-    };
-
-    QRect bounds{0, 0, board.cols(), board.rows()};
-
-    auto ns = offsets
-           | transform([point](QPoint o) { return point + o; })
-           | filter([bounds = std::move(bounds)](QPoint p) { return bounds.contains(p); });
-
-    return ns;
-}
-
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_about{nullptr}
+    , m_clock{new Clock(this)}
 {
     QSettings settings;
     GameBoard size;
@@ -92,34 +54,9 @@ MainWindow::MainWindow(QWidget *parent)
     initializeActions();
     initializeMenu();
 
+    connect(m_clock, &Clock::tick, this, &MainWindow::clockTicked);
+
     initializeGame(size);
-}
-
-MainWindow::~MainWindow() {}
-
-void MainWindow::cellRevealed(QPoint coords)
-{
-    Cell* cell = cellAt(coords);
-    if (cell->isMine())
-    {
-        lose();
-        return;
-    }
-
-    if (cell->getNumNeighboringMines() == 0)
-    {
-        for (const auto& neighbor : neighborsOf(m_board, coords))
-        {
-            cellAt(neighbor)->reveal();
-        }
-
-        return;
-    }
-
-    if (isBoardSolved())
-    {
-        win();
-    }
 }
 
 void MainWindow::showAboutDialog()
@@ -256,102 +193,18 @@ void MainWindow::initializeGrid()
         setCentralWidget(nullptr);
     }
 
-    QGridLayout* grid = new QGridLayout;
-    grid->setHorizontalSpacing(0);
-    grid->setVerticalSpacing(0);
-    grid->setContentsMargins(0, 0, 0, 0);
+    m_clock->reset();
 
-    QWidget* widget = new QWidget;
-    widget->setLayout(grid);
-    setCentralWidget(widget);
+    MineField* field = new MineField(m_board, this);
 
-    QSizePolicy sizePolicy;
-    sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-    sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
-    sizePolicy.setWidthForHeight(true);
+    connect(field, &MineField::gameWon, this, &MainWindow::win);
+    connect(field, &MineField::gameLost, this, &MainWindow::lose);
 
-    m_cells.clear();
-    m_cells.reserve(rows() * cols());
-    for (QPoint coord : allCells(m_board))
-    {
-        Cell* cell = new Cell(coord, widget);
-        cell->setSizePolicy(sizePolicy);
-        cell->setMinimumHeight(kCellSize);
-        cell->setMinimumWidth(kCellSize);
+    connect(field, &MineField::gameStarted, m_clock, &Clock::resume);
+    connect(field, &MineField::gameWon, m_clock, &Clock::pause);
+    connect(field, &MineField::gameLost, m_clock, &Clock::pause);
 
-        connect(cell, &Cell::revealed, this, &MainWindow::cellRevealed);
-        connect(this, &MainWindow::gameEnded, cell, &Cell::gameEnded);
-
-        grid->addWidget(cell, coord.y(), coord.x());
-        m_cells << cell;
-    }
-    m_cells.squeeze(); // if we've gone from a large to a small game, m_cells is over-allocated.  release.
-
-    // Next, mark cells that are mines.
-    // Make a random list of cell indices, take as many non-corner cells as required,
-    // and mark them as mines.
-
-    std::vector<int> indices(rows() * cols()); // I'd use a QList here but MSVC complains about implicit conversion between iterators and pointers
-    std::iota(indices.begin(), indices.end(), 0);
-    std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
-
-    auto toPoint = [cols = cols()](int n) { return QPoint{n % cols, n / cols}; };
-    auto nonCorner = [&](QPoint p) { return !isCorner(p); };
-    auto mineCells = indices
-                     | std::ranges::views::transform(toPoint)
-                     | std::ranges::views::filter(nonCorner)
-                     | std::ranges::views::take(mines());
-
-    for (QPoint point : mineCells)
-    {
-        Q_ASSERT(!isCorner(point));
-        cellAt(point)->setNumNeighboringMines(-1);
-    }
-
-    // Finally, mark all non-mines with the count of surrounding mines.
-    for (QPoint coord : allCells(m_board))
-    {
-        Cell* cell = cellAt(coord);
-        if (cell->isMine())
-        {
-            continue;
-        }
-
-        using namespace std::ranges::views;
-
-        auto ns = neighborsOf(m_board, coord)
-                  | transform([&](auto p) { return cellAt(p); })
-                  | filter([](auto c) { return c->isMine(); });
-
-        auto numNeighbors = std::ranges::distance(ns);
-
-        cell->setNumNeighboringMines(numNeighbors);
-    }
-}
-
-Cell* MainWindow::cellAt(QPoint coord) const
-{
-    return m_cells[(coord.y() * cols()) + coord.x()];
-}
-
-bool MainWindow::isBoardSolved() const
-{
-    return std::all_of(
-        m_cells.begin(),
-        m_cells.end(),
-        [](Cell* c) { return c->isRevealed() || c->isMine(); });
-}
-
-bool MainWindow::isCorner(const QPoint& point) const
-{
-    int xmin = 0;
-    int ymin = 0;
-    int xmax = cols() - 1;
-    int ymax = rows() - 1;
-    return (point.x() == xmin && point.y() == ymin)
-           || (point.x() == xmin && point.y() == ymax)
-           || (point.x() == xmax && point.y() == ymin)
-           || (point.x() == xmax && point.y() == ymax);
+    setCentralWidget(field);
 }
 
 int MainWindow::rows() const
@@ -371,15 +224,6 @@ int MainWindow::mines() const
 
 void MainWindow::win()
 {
-    if (!centralWidget()->isEnabled())
-    {
-        return;
-    }
-
-    centralWidget()->setEnabled(false);
-
-    emit gameEnded();
-
     int ret = QMessageBox::information(
         this,
         tr("You win!"),
@@ -396,15 +240,6 @@ void MainWindow::win()
 
 void MainWindow::lose()
 {
-    if (!centralWidget()->isEnabled())
-    {
-        return;
-    }
-
-    centralWidget()->setEnabled(false);
-
-    emit gameEnded();
-
     int ret = QMessageBox::critical(
         this,
         tr("You lost"),
@@ -417,4 +252,9 @@ void MainWindow::lose()
     {
         initializeGrid();
     }
+}
+
+void MainWindow::clockTicked(int elapsed)
+{
+    qInfo() << "Tick: " << elapsed;
 }

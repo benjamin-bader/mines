@@ -15,60 +15,49 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef MINEFIELD_H
+#define MINEFIELD_H
 
-#include "aboutdialog.h"
 #include "cell.h"
-#include "clock.h"
 #include "gameboard.h"
-#include "minefield.h"
 
-#include <QAction>
-#include <QActionGroup>
-#include <QGridLayout>
 #include <QList>
-#include <QMainWindow>
 #include <QPoint>
+#include <QWidget>
 
-class MainWindow : public QMainWindow
+/**
+ * @brief The MineField class implements the game's logic and core UI.
+ */
+class MineField : public QWidget
 {
     Q_OBJECT
 
+    GameBoard m_board;
+    QList<Cell*> m_cells;
+    bool m_started;
+
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MineField(GameBoard board, QWidget *parent = nullptr);
+
+signals:
+    void gameStarted();
+    void gameWon();
+    void gameLost();
 
 private slots:
-    void beginCustomGame(bool checked);
-    void showAboutDialog();
-    void clockTicked(int elapsed);
+    void cellRevealed(const QPoint& coord);
 
 private:
-    void initializeActions();
-    void initializeMenu();
-    void initializeGame(GameBoard board);
-    void initializeGrid();
-
-    void updateMenuCheckboxes();
+    bool isBoardSolved() const;
+    bool isCorner(const QPoint& point) const;
 
     int rows() const;
     int cols() const;
-    int mines() const;
+
+    Cell* cellAt(const QPoint& coord);
 
     void win();
     void lose();
-
-    GameBoard m_board;
-    QList<Cell*> m_cells;
-
-    QActionGroup* m_gameSizeGroup;
-    QAction* m_smallGame;
-    QAction* m_mediumGame;
-    QAction* m_largeGame;
-    QAction* m_customGame;
-
-    AboutDialog* m_about;
-    Clock* m_clock;
 };
 
-#endif // MAINWINDOW_H
+#endif // MINEFIELD_H

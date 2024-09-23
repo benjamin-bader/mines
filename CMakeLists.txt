@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
         aboutdialog.h
         cell.cpp
         cell.h
+        clock.cpp
+        clock.h
         customgamedialog.cpp
         customgamedialog.h
         gameboard.cpp
@@ -28,6 +30,8 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        minefield.cpp
+        minefield.h
         resources/res.qrc
         ${TS_FILES}
 )
