@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
         customgamedialog.h
         gameboard.cpp
         gameboard.h
+        headerbar.cpp
+        headerbar.h
         main.cpp
         mainwindow.cpp
         mainwindow.h

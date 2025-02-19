@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QVariant>
+#include <QVBoxLayout>
 
 #include <QtGlobal>
 
@@ -45,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_about{nullptr}
     , m_clock{new Clock(this)}
+    , m_headerBar{new HeaderBar{this}}
 {
     QSettings settings;
     GameBoard size;
@@ -55,6 +57,9 @@ MainWindow::MainWindow(QWidget *parent)
     initializeMenu();
 
     connect(m_clock, &Clock::tick, this, &MainWindow::clockTicked);
+    connect(m_clock, &Clock::tick, m_headerBar, &HeaderBar::updateClock);
+
+    connect(m_headerBar, &HeaderBar::startButtonPushed, this, [&]() { this->initializeGame(this->m_board); });
 
     initializeGame(size);
 }
@@ -157,6 +162,8 @@ void MainWindow::initializeGame(GameBoard board)
     fixedHeight += menuWidget()->height();
 #endif
 
+    fixedHeight += m_headerBar->height();
+
     setFixedSize(fixedWidth, fixedHeight);
 
     updateMenuCheckboxes();
@@ -187,24 +194,37 @@ void MainWindow::updateMenuCheckboxes()
 
 void MainWindow::initializeGrid()
 {
+    m_clock->reset();
+
+    MineField* field = new MineField(m_board, this);
+
+    // connect(field, &MineField::gameWon, this, &MainWindow::win);
+    // connect(field, &MineField::gameLost, this, &MainWindow::lose);
+
+    connect(field, &MineField::gameStarted, m_clock, &Clock::resume);
+    connect(field, &MineField::gameWon, m_clock, &Clock::pause);
+    connect(field, &MineField::gameLost, m_clock, &Clock::pause);
+
+    connect(field, &MineField::gameStarted, m_headerBar, &HeaderBar::gameStarted);
+    connect(field, &MineField::gameWon, m_headerBar, &HeaderBar::gameEnded);
+    connect(field, &MineField::gameLost, m_headerBar, &HeaderBar::gameEnded);
+
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(m_headerBar);
+    layout->addWidget(field);
+
+    QWidget* widget = new QWidget;
+    widget->setLayout(layout);
+
     if (centralWidget() != nullptr)
     {
         centralWidget()->deleteLater();
         setCentralWidget(nullptr);
     }
 
-    m_clock->reset();
-
-    MineField* field = new MineField(m_board, this);
-
-    connect(field, &MineField::gameWon, this, &MainWindow::win);
-    connect(field, &MineField::gameLost, this, &MainWindow::lose);
-
-    connect(field, &MineField::gameStarted, m_clock, &Clock::resume);
-    connect(field, &MineField::gameWon, m_clock, &Clock::pause);
-    connect(field, &MineField::gameLost, m_clock, &Clock::pause);
-
-    setCentralWidget(field);
+    setCentralWidget(widget);
 }
 
 int MainWindow::rows() const
@@ -256,5 +276,5 @@ void MainWindow::lose()
 
 void MainWindow::clockTicked(int elapsed)
 {
-    qInfo() << "Tick: " << elapsed;
+    //qInfo() << "Tick: " << elapsed;
 }

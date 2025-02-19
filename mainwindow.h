@@ -22,7 +22,7 @@
 #include "cell.h"
 #include "clock.h"
 #include "gameboard.h"
-#include "minefield.h"
+#include "headerbar.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -69,6 +69,7 @@ private:
 
     AboutDialog* m_about;
     Clock* m_clock;
+    HeaderBar* m_headerBar;
 };
 
 #endif // MAINWINDOW_H
